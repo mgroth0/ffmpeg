@@ -20,24 +20,7 @@
       "type": "Lib",
       "cfg": "implementation",
       "key": "ffmpeg"
-    },
-    {
-      "type": "Lib",
-      "cfg": "implementation",
-      "key": "ffmpeg",
-      "classifier": "linux-x86_64"
-    },
-    {
-      "type": "Lib",
-      "cfg": "implementation",
-      "key": "openblas",
-      "classifier": "linux-x86_64"
-    },
-    {
-      "type": "Lib",
-      "cfg": "implementation",
-      "key": "bytedeco-opencv",
-      "classifier": "linux-x86_64"
     }
-  ]
+  ],
+  "note": "    {\n      \"type\": \"Lib\",\n      \"cfg\": \"implementation\",\n      \"key\": \"ffmpeg\",\n      \"classifier\": \"linux-x86_64\"\n    },\n    {\n      \"type\": \"Lib\",\n      \"cfg\": \"implementation\",\n      \"key\": \"openblas\",\n      \"classifier\": \"linux-x86_64\"\n    },\n    {\n      \"type\": \"Lib\",\n      \"cfg\": \"implementation\",\n      \"key\": \"bytedeco-opencv\",\n      \"classifier\": \"linux-x86_64\"\n    }"
 }
