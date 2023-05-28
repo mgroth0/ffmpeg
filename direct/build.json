@@ -1,0 +1,43 @@
+{
+  "type": "BasicJvmOnlyMod",
+  "dependencies": [
+    {
+      "type": "Project",
+      "cfg": "implementation",
+      "path": ":k:service"
+    },
+    {
+      "type": "Project",
+      "cfg": "implementation",
+      "path": ":k:file"
+    },
+    {
+      "type": "Lib",
+      "cfg": "implementation",
+      "key": "javacv"
+    },
+    {
+      "type": "Lib",
+      "cfg": "implementation",
+      "key": "ffmpeg"
+    },
+    {
+      "type": "Lib",
+      "cfg": "implementation",
+      "key": "ffmpeg",
+      "classifier": "linux-x86_64"
+    },
+    {
+      "type": "Lib",
+      "cfg": "implementation",
+      "key": "openblas",
+      "classifier": "linux-x86_64"
+    },
+    {
+      "type": "Lib",
+      "cfg": "implementation",
+      "key": "bytedeco-opencv",
+      "classifier": "linux-x86_64"
+    }
+  ]
+}
