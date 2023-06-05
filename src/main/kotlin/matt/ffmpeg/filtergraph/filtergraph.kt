@@ -1,80 +1,125 @@
 package matt.ffmpeg.filtergraph
 
 import matt.lang.anno.SeeURL
+import matt.model.data.file.FilePath
 import matt.prim.str.joinWithCommas
 
+
+fun filterGraph(op: FilterGraphDsl.() -> Unit) = FilterGraphDsl().apply(op).build()
+
+
+class FilterGraphDsl {
+    internal val chains = mutableListOf<FilterChain>()
+    fun chain(op: FilterChainDsl.() -> Unit): FilterChain {
+        val chain = filterChain(op)
+        chains += filterChain(op)
+        return chain
+    }
+
+    internal fun build() = StaticFilterGraph(*chains.toTypedArray())
+}
+
+interface FilterGraph {
+    fun arg(): String
+}
+
+class VariableFilterGraph(val variableName: String) : FilterGraph {
+    override fun arg() = "\$$variableName"
+}
+
 @SeeURL("https://ffmpeg.org/ffmpeg-filters.html")
-class Filtergraph(vararg val filters: FiltergraphFilter) {
-    fun arg(): String = filters.joinWithCommas()
+class StaticFilterGraph(private vararg val filterChains: FilterChain) : FilterGraph {
+    override fun arg(): String = filterChains.joinToString(separator = ";") { it.arg() }
 }
 
-interface FiltergraphFilter {
-    fun arg(): String
+fun filterChain(op: FilterChainDsl.() -> Unit) = FilterChainDsl().apply(op).build()
+
+
+class FilterChainDsl {
+    internal val filters = mutableListOf<SuppliedFilter>()
+    internal fun build() = FilterChain(*filters.toTypedArray())
 }
 
-class Scale(private val width: ScaleDimension, private val height: ScaleDimension) : FiltergraphFilter {
+@SeeURL("https://ffmpeg.org/ffmpeg-filters.html")
+class FilterChain(private vararg val filters: SuppliedFilter) {
+    fun arg(): String = filters.joinWithCommas { it.argument() }
+}
+
+interface FiltergraphFilter<V : FiltergraphValue> {
+    val name: String
+}
+
+
+interface SuppliedFilter {
+    val filter: FiltergraphFilter<*>
+    val valueExpression: String
+    val inputs: List<String>
+    val outputs: List<String>
+}
+
+
+fun SuppliedFilter.argument() =
+    "${inputs.joinToString(separator = "") { "[$it]" }}${filter.name}=${valueExpression}${outputs.joinToString(separator = "") { "[$it]" }}"
+
+infix fun <V : FiltergraphValue> FiltergraphFilter<V>.withValue(value: V) = StaticSuppliedFilter(this, value)
+
+abstract class SimpleFilter : SuppliedFilter {
+    override val inputs = listOf<String>()
+    override val outputs = listOf<String>()
+}
+
+class StaticSuppliedFilter<V : FiltergraphValue, F : FiltergraphFilter<V>>(
+    override val filter: F,
+    val value: FiltergraphValue
+) : SimpleFilter() {
+    override val valueExpression = value.expression()
+
+}
+
+
+infix fun FiltergraphFilter<*>.withVariable(variable: String) = VariableSuppliedFilter(this, variable)
+
+class VariableSuppliedFilter(
+    override val filter: FiltergraphFilter<*>,
+    variable: String
+) : SimpleFilter() {
+    override val valueExpression = "\"\$$variable\""
+}
+
+infix fun FiltergraphFilter<*>.withFile(file: FilePath) = FileSuppliedFilter(this, file)
+
+class FileSuppliedFilter(
+    override val filter: FiltergraphFilter<*>,
+    val file: FilePath
+) : SimpleFilter() {
     init {
-        require(listOf(width, height).filterIsInstance<MaintainAspectRatioDivisibleBy>().size < 2)
+        /*must be absolute*/
+        require(file.filePath.startsWith("/"))
     }
 
-    override fun arg(): String {
-        return "scale=$width:$height"
-    }
-}
-
-interface ScaleDimension {
-    fun arg(): String
-}
-
-class Absolute(val pixels: Int) : ScaleDimension {
-    override fun arg(): String {
-        return pixels.toString()
-    }
-}
-
-class MaintainAspectRatioDivisibleBy(val divisor: Int) : ScaleDimension {
-    init {
-        require(divisor > 0)
-    }
-
-    override fun arg(): String {
-        return "-$divisor"
-    }
-}
-
-@SeeURL("http://trac.ffmpeg.org/wiki/Scaling")
-class PixelAspectRatio(private val widthRatio: Int, private val heightRatio: Int) : FiltergraphFilter {
-    override fun arg(): String {
-        return "setsar=$widthRatio/$heightRatio"
-    }
+    override val valueExpression = file.filePath
 }
 
 
-interface FfmpegSelect : FiltergraphFilter {
-    override fun arg() = "select=${selectValue}"
-    val selectValue: String
+interface FiltergraphValue {
+    fun expression(): String
 }
 
-class StaticSelect(frames: List<Int>) : FfmpegSelect {
-    val rawValue = frames.joinToString(separator = "+") { "eq(n\\,$it)" }
-    override val selectValue = "'$rawValue'"
+fun SimpleFilter.withInputsAndOutputs(
+    inputs: List<String>,
+    outputs: List<String>
+) = ComplexFilter(this, inputs = inputs, outputs = outputs)
+
+
+class ComplexFilter(
+    private val simpleFilter: SuppliedFilter,
+    override val inputs: List<String>,
+    override val outputs: List<String>
+) :
+    SuppliedFilter {
+    override val filter: FiltergraphFilter<*> = simpleFilter.filter
+    override val valueExpression: String get() = simpleFilter.valueExpression
 }
 
-class VariableNameSelect(variableName: String) : FfmpegSelect {
-    override val selectValue: String = "\$$variableName"
-}
 
-/*
 
-interface Crop {
-    val selectValue: String
-}
-
-class StaticCrop(frames: List<Int>) : FfmpegSelect {
-    val rawValue = frames.joinToString(separator = "+") { "eq(n\\,$it)" }
-    override val selectValue = "'$rawValue'"
-}
-
-class VariableNameCrop(variableName: String) : FfmpegSelect {
-    override val selectValue: String = "\$$variableName"
-}*/
