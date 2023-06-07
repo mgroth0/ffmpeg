@@ -7,8 +7,8 @@ import matt.ffmpeg.filtergraph.withValue
 import matt.lang.anno.SeeURL
 
 
-
-object PixelAspectRatio : FiltergraphFilter<PixelAspectRatioValue> {
+@SeeURL("https://stackoverflow.com/questions/50346707/ffmpeg-scaling-not-working-for-video")
+object PixelAspectRatio : FiltergraphFilter<AspectRatioValue> {
     override val name = "setsar"
 }
 
@@ -19,10 +19,30 @@ fun FilterChainDsl.aspectRatio(
     filters += PixelAspectRatio withValue PixelAspectRatioValue(widthRatio = width, heightRatio = height)
 }
 
+fun FilterChainDsl.sampleAspectRatio(
+    sar: Int
+) {
+    filters += PixelAspectRatio withValue Sar(sar)
+}
+
+interface AspectRatioValue : FiltergraphValue
+
 @SeeURL("http://trac.ffmpeg.org/wiki/Scaling")
-class PixelAspectRatioValue(private val widthRatio: Int, private val heightRatio: Int) : FiltergraphValue {
+class PixelAspectRatioValue(
+    private val widthRatio: Int,
+    private val heightRatio: Int
+) : AspectRatioValue {
     override fun expression(): String {
         return "$widthRatio/$heightRatio"
+    }
+}
+
+@SeeURL("http://trac.ffmpeg.org/wiki/Scaling")
+class Sar(
+    private val sar: Int,
+) : AspectRatioValue {
+    override fun expression(): String {
+        return "sar=$sar"
     }
 }
 

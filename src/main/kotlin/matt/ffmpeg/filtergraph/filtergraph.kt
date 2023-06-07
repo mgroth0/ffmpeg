@@ -3,14 +3,15 @@ package matt.ffmpeg.filtergraph
 import matt.lang.anno.SeeURL
 import matt.model.data.file.FilePath
 import matt.prim.str.joinWithCommas
+import matt.prim.str.takeIfNotBlank
 
 
 fun filterGraph(op: FilterGraphDsl.() -> Unit) = FilterGraphDsl().apply(op).build()
 
 
 class FilterGraphDsl {
-    internal val chains = mutableListOf<FilterChain>()
-    fun chain(op: FilterChainDsl.() -> Unit): FilterChain {
+    internal val chains = mutableListOf<StaticFilterChain>()
+    fun chain(op: FilterChainDsl.() -> Unit): StaticFilterChain {
         val chain = filterChain(op)
         chains += filterChain(op)
         return chain
@@ -27,8 +28,12 @@ class VariableFilterGraph(val variableName: String) : FilterGraph {
     override fun arg() = "\$$variableName"
 }
 
+class VariableFilterChain(val variableName: String) : FilterChain {
+    override fun arg() = "\$$variableName"
+}
+
 @SeeURL("https://ffmpeg.org/ffmpeg-filters.html")
-class StaticFilterGraph(private vararg val filterChains: FilterChain) : FilterGraph {
+class StaticFilterGraph(private vararg val filterChains: StaticFilterChain) : FilterGraph {
     override fun arg(): String = filterChains.joinToString(separator = ";") { it.arg() }
 }
 
@@ -37,12 +42,16 @@ fun filterChain(op: FilterChainDsl.() -> Unit) = FilterChainDsl().apply(op).buil
 
 class FilterChainDsl {
     internal val filters = mutableListOf<SuppliedFilter>()
-    internal fun build() = FilterChain(*filters.toTypedArray())
+    internal fun build() = StaticFilterChain(*filters.toTypedArray())
+}
+
+interface FilterChain {
+    fun arg(): String
 }
 
 @SeeURL("https://ffmpeg.org/ffmpeg-filters.html")
-class FilterChain(private vararg val filters: SuppliedFilter) {
-    fun arg(): String = filters.joinWithCommas { it.argument() }
+class StaticFilterChain(private vararg val filters: SuppliedFilter) : FilterChain {
+    override fun arg(): String = filters.joinWithCommas { it.argument() }
 }
 
 interface FiltergraphFilter<V : FiltergraphValue> {
@@ -58,10 +67,25 @@ interface SuppliedFilter {
 }
 
 
-fun SuppliedFilter.argument() =
-    "${inputs.joinToString(separator = "") { "[$it]" }}${filter.name}=${valueExpression}${outputs.joinToString(separator = "") { "[$it]" }}"
+fun SuppliedFilter.argument() = (valueExpression.takeIfNotBlank()?.let { "=$it" } ?: "").let {
+    "${inputs.joinToString(separator = "") { "[$it]" }}${filter.name}$it${outputs.joinToString(separator = "") { "[$it]" }}"
+}
+
 
 infix fun <V : FiltergraphValue> FiltergraphFilter<V>.withValue(value: V) = StaticSuppliedFilter(this, value)
+
+fun <V : FiltergraphValue> FiltergraphFilter<V>.suppliedByCommand() = CommandSuppliedFilter(this)
+
+
+class CommandSuppliedFilter<V : FiltergraphValue, F : FiltergraphFilter<V>>(
+    override val filter: F
+) : SimpleFilter() {
+
+
+    override val valueExpression = ""
+
+
+}
 
 abstract class SimpleFilter : SuppliedFilter {
     override val inputs = listOf<String>()

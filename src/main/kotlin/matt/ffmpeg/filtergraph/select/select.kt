@@ -1,5 +1,10 @@
 package matt.ffmpeg.filtergraph.select
 
+import matt.ffmpeg.eval.Eq
+import matt.ffmpeg.eval.FfmpegConstant
+import matt.ffmpeg.eval.GlobalConstants
+import matt.ffmpeg.eval.If
+import matt.ffmpeg.eval.RawFfmpegExpression
 import matt.ffmpeg.filtergraph.FilterChainDsl
 import matt.ffmpeg.filtergraph.FiltergraphFilter
 import matt.ffmpeg.filtergraph.FiltergraphValue
@@ -19,13 +24,15 @@ fun FilterChainDsl.select(
     inputs: List<String>,
     outputs: List<String>
 ) {
-    filters += FfmpegSelect.withValue(StaticSelect(frames)).withInputsAndOutputs(inputs = inputs, outputs = outputs)
+    filters += FfmpegSelect.withValue(StaticSelect(frames, numOutputs = outputs.takeIf { it.isNotEmpty() }?.size ?: 1))
+        .withInputsAndOutputs(inputs = inputs, outputs = outputs)
 }
 
 @SeeURL("https://ffmpeg.org/ffmpeg-filters.html#select_002c-aselect")
-class StaticSelect(frames: List<SelectedFrame>) : FiltergraphValue {
-    val rawValue = frames.joinToString(separator = "+") { it.expression } + ":${frames.size}"
-    override fun expression() = rawValue
+class StaticSelect(frames: List<SelectedFrame>, numOutputs: Int) : FiltergraphValue {
+    private val numOutputsPart = if (numOutputs == 1) "" else ":$numOutputs"
+    private val rawValue = frames.joinToString(separator = "+") { it.expression.expression } + numOutputsPart
+    override fun expression() = /*"print(n+25)\\;" +*/ rawValue
 }
 
 
@@ -42,9 +49,17 @@ fun FilterChainDsl.selectFromVariable(
 }
 
 
+class SelectConstants : GlobalConstants() {
+    val n = FfmpegConstant("n")
+}
+
 data class SelectedFrame(
     val frame: Int,
+    private val outputToNumberedStream: Boolean = false
 ) {
-    val expression = "if(eq(n\\,$frame)\\,n+1\\,0)"
+    private val returnValue = if (outputToNumberedStream) "n+1" else "1"
+    val expression =
+        SelectConstants().run { If(Eq(n, RawFfmpegExpression(frame.toString())), RawFfmpegExpression(returnValue)) }
 }
+
 
