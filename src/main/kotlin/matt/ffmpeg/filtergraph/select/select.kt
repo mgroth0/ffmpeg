@@ -24,8 +24,10 @@ fun FilterChainDsl.select(
     inputs: List<String>,
     outputs: List<String>
 ) {
-    filters += FfmpegSelect.withValue(StaticSelect(frames, numOutputs = outputs.takeIf { it.isNotEmpty() }?.size ?: 1))
-        .withInputsAndOutputs(inputs = inputs, outputs = outputs)
+    filters += FfmpegSelect.withValue(StaticSelect(
+        frames,
+        numOutputs = outputs.takeIf { it.isNotEmpty() }?.size ?: 1
+    )).withInputsAndOutputs(inputs = inputs, outputs = outputs)
 }
 
 @SeeURL("https://ffmpeg.org/ffmpeg-filters.html#select_002c-aselect")

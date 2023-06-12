@@ -1,5 +1,6 @@
 package matt.ffmpeg
 
+import matt.ffmpeg.ffmpegPath.homebrewFFmpeg
 import matt.ffmpeg.ffmpegPath.justFFmpeg
 import matt.ffmpeg.filtergraph.FilterChain
 import matt.ffmpeg.filtergraph.FilterGraph
@@ -9,6 +10,8 @@ import matt.lang.opt
 import matt.lang.optArray
 import matt.model.data.file.FilePath
 import matt.shell.Shell
+import matt.shell.ShellProgramPathContext.HomeBrew
+import matt.shell.ShellProgramPathContext.InPath
 
 enum class FFmpegPixelFormat {
     rgb8
@@ -17,7 +20,7 @@ enum class FFmpegPixelFormat {
 const val DEFAULT_MAX_STREAMS = 1000
 
 enum class ffmpegPath(path: String? = null) {
-    justFFmpeg, homebrewFFmpeg("/opt/homebrew/bin/ffmpeg");
+    justFFmpeg("ffmpeg"), homebrewFFmpeg("/opt/homebrew/bin/ffmpeg");
 
     val command = path ?: name
 }
@@ -36,7 +39,6 @@ enum class FFMpegLogLevel {
 
 @SeeURL("https://ffmpeg.org/ffmpeg.html")
 fun <R> Shell<R>.ffmpeg(
-    path: ffmpegPath = justFFmpeg,
     input: FilePath,
     encoderPixelFormat: FFmpegPixelFormat? = null,
     output: FilePath,
@@ -56,8 +58,12 @@ fun <R> Shell<R>.ffmpeg(
     logLevel: FFMpegLogLevel? = null,
 ): R {
     require(listOfNotNull(filtergraph, complexFiltergraph).size <= 1)
+    val ffmpegPath = when (programPathContext) {
+        InPath   -> justFFmpeg
+        HomeBrew -> homebrewFFmpeg
+    }
     return sendCommand(
-        path.command,
+        ffmpegPath.command,
         *optArray(logLevel) {
             arrayOf("-loglevel", this.name)
         },

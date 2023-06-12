@@ -16,24 +16,38 @@ class FfmpegConstant(private val symbol: String) : FfmpegExpression {
 }
 
 class RawFfmpegExpression(override val expression: String) : FfmpegExpression {
-    constructor(int: Int): this(int.toString())
+    constructor(int: Int) : this(int.toString())
 }
+
+
+abstract class FFmpegExpressionFunction(
+    val name: String
+) : FfmpegExpression {
+    abstract val arguments: List<FfmpegExpression>
+    final override val expression: String get() = "$name(${arguments.joinToString("\\,") { it.expression }})"
+}
+
 
 class If(
     condition: FfmpegExpression,
     then: FfmpegExpression,
     val `else`: FfmpegExpression? = null
-) : FfmpegExpression {
-    override val expression =
-        "if(${condition.expression},${then.expression}${`else`?.let { ",${it.expression}" } ?: ""})"
+) : FFmpegExpressionFunction("if") {
+    override val arguments = listOfNotNull(
+        condition,
+        then,
+        `else`
+    )
 }
 
 class Eq(
     first: FfmpegExpression,
     second: FfmpegExpression,
-) : FfmpegExpression {
-    override val expression =
-        "eq(${first.expression},${second.expression}"
+) : FFmpegExpressionFunction("eq") {
+    override val arguments = listOf(
+        first,
+        second,
+    )
 }
 
 class Div(

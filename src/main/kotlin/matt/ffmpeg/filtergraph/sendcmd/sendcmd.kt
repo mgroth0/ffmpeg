@@ -103,7 +103,6 @@ class FfmpegEventedCommandIntervalDsl(private val interval: Duration, private va
     }
 
 
-
     fun generate(): List<FfmpegSingleCommand> {
         return commands
     }
@@ -142,7 +141,7 @@ data class FfmpegCommandInterval(val interval: Duration, val commands: List<Ffmp
                 commands.dropLast(1).forEach {
                     +"\t${it.code()},"
                 }
-                +"\t${commands.last().code()}"
+                +"\t${commands.last().code()};"
             }
         }
 
