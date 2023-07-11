@@ -8,6 +8,8 @@ import matt.ffmpeg.filtergraph.scale.ScaleEval.init
 import matt.ffmpeg.filtergraph.suppliedByCommand
 import matt.ffmpeg.filtergraph.withValue
 import matt.lang.anno.SeeURL
+import matt.lang.require.requireLessThan
+import matt.lang.require.requirePositive
 
 @SeeURL("https://ffmpeg.org/ffmpeg-filters.html#scale-1")
 object Scale : FiltergraphFilter<ScaleValue> {
@@ -41,7 +43,7 @@ class ScaleValue(
 ) : FiltergraphValue {
 
     init {
-        require(listOf(width, height).filterIsInstance<MaintainAspectRatioDivisibleBy>().size < 2)
+        requireLessThan(listOf(width, height).filterIsInstance<MaintainAspectRatioDivisibleBy>().size, 2)
     }
 
     override fun expression() = listOf(
@@ -66,7 +68,7 @@ class Absolute(val pixels: Int) : ScaleDimension {
 
 class MaintainAspectRatioDivisibleBy(val divisor: Int) : ScaleDimension {
     init {
-        require(divisor > 0)
+        requirePositive(divisor)
     }
 
     override fun arg(): String {

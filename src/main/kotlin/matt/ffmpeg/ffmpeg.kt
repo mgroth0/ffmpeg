@@ -8,6 +8,7 @@ import matt.lang.If
 import matt.lang.anno.SeeURL
 import matt.lang.opt
 import matt.lang.optArray
+import matt.lang.require.requireLessThanOrEqualTo
 import matt.model.data.file.FilePath
 import matt.shell.Shell
 import matt.shell.ShellProgramPathContext.HomeBrew
@@ -57,7 +58,7 @@ fun <R> Shell<R>.ffmpeg(
     reinitFilter: Boolean? = null,
     logLevel: FFMpegLogLevel? = null,
 ): R {
-    require(listOfNotNull(filtergraph, complexFiltergraph).size <= 1)
+    requireLessThanOrEqualTo(listOfNotNull(filtergraph, complexFiltergraph).size, 1)
     val ffmpegPath = when (programPathContext) {
         InPath   -> justFFmpeg
         HomeBrew -> homebrewFFmpeg

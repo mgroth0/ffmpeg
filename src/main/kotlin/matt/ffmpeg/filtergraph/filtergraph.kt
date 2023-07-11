@@ -1,6 +1,7 @@
 package matt.ffmpeg.filtergraph
 
 import matt.lang.anno.SeeURL
+import matt.lang.require.requireStartsWith
 import matt.model.data.file.FilePath
 import matt.prim.str.joinWithCommas
 import matt.prim.str.takeIfNotBlank
@@ -116,9 +117,8 @@ class FileSuppliedFilter(
     override val filter: FiltergraphFilter<*>,
     val file: FilePath
 ) : SimpleFilter() {
-    init {
-        /*must be absolute*/
-        require(file.filePath.startsWith("/"))
+    init {/*must be absolute*/
+        requireStartsWith(file.filePath, "/")
     }
 
     override val valueExpression = file.filePath
@@ -139,8 +139,7 @@ class ComplexFilter(
     private val simpleFilter: SuppliedFilter,
     override val inputs: List<String>,
     override val outputs: List<String>
-) :
-    SuppliedFilter {
+) : SuppliedFilter {
     override val filter: FiltergraphFilter<*> = simpleFilter.filter
     override val valueExpression: String get() = simpleFilter.valueExpression
 }

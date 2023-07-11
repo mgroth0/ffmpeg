@@ -6,6 +6,7 @@ import matt.ffmpeg.filtergraph.FiltergraphValue
 import matt.ffmpeg.filtergraph.withInputsAndOutputs
 import matt.ffmpeg.filtergraph.withValue
 import matt.lang.anno.SeeURL
+import matt.lang.require.requireNotEmpty
 import matt.model.code.SimpleCodeGenerator
 import matt.model.code.SimpleFormatCode
 import matt.model.data.file.FilePath
@@ -112,7 +113,7 @@ class FfmpegEventedCommandIntervalDsl(private val interval: Duration, private va
 class FfmpegCommand(private vararg val intervals: FfmpegCommandInterval) : SimpleFormatCode<FfmpegCommand> {
     override val code: String
         get() = lineDelimitedString {
-            require(intervals.isNotEmpty())
+            requireNotEmpty(intervals)
             intervals.forEach {
                 +it.code()
             }
@@ -131,7 +132,7 @@ class FfmpegCommand(private vararg val intervals: FfmpegCommandInterval) : Simpl
 data class FfmpegCommandInterval(val interval: Duration, val commands: List<FfmpegSingleCommand>) {
     fun code(): String {
 
-        require(commands.isNotEmpty())
+        requireNotEmpty(commands)
 
         return if (commands.size == 1) {
             "${interval.toDouble(SECONDS)} ${commands.single().code()}"

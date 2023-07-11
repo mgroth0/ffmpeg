@@ -1,6 +1,7 @@
 package matt.ffmpeg.direct.weirdfix
 
 import matt.lang.anno.SeeURL
+import matt.lang.require.requireNonNegative
 import matt.prim.str.elementsToString
 import org.bytedeco.ffmpeg.avcodec.AVCodecContext
 import org.bytedeco.ffmpeg.global.swscale
@@ -86,7 +87,7 @@ fun weirdFix(frameGrabber: FrameGrabber) {
             println("saturation=${saturation.toList().elementsToString()}")
         }.single()
     )
-    require(e >= 0) {
+    requireNonNegative(e) {
         "e=${e}"
     }
 
